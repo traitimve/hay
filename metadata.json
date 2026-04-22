@@ -1,0 +1,10 @@
+{
+  "name": "LiveViet Translator",
+  "description": "Real-time AI audio translator that converts microphone or computer sounds directly into Vietnamese speech and subtitles.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "display-capture"
+  ],
+  "majorCapabilities": []
+}
