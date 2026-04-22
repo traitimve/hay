@@ -15,7 +15,7 @@ export class AudioCapture {
       class PCMProcessor extends AudioWorkletProcessor {
         constructor() {
           super();
-          this.buffer = new Int16Array(2048);
+          this.buffer = new Int16Array(1024);
           this.offset = 0;
         }
         process(inputs, outputs, parameters) {

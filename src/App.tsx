@@ -9,6 +9,7 @@ export default function App() {
   const [isLive, setIsLive] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [translations, setTranslations] = useState<string>("");
+  const [transcriptions, setTranscriptions] = useState<string>("");
   const [isMuted, setIsMuted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -32,6 +33,7 @@ export default function App() {
     setError(null);
     setIsConnecting(true);
     setTranslations("");
+    setTranscriptions("");
 
     try {
       if (!playerRef.current) {
@@ -84,7 +86,14 @@ export default function App() {
           speechConfig: {
             voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } },
           },
-          systemInstruction: `You are a real-time AI audio translator with ultra-low latency. Translate incoming English or Japanese audio to Vietnamese continuously. Ensure high accuracy for Japanese speech recognition and properly handle any noisy inputs. Do NOT wait for complete sentences. Output partial and ongoing translations immediately. Do not converse back. Output only the direct Vietnamese translation. Speak clearly and at a ${speed} speed. Provide both text and audio of the Vietnamese translation.`,
+          inputAudioTranscription: { },
+          systemInstruction: `You are an ultra-low latency real-time AI audio translator. Translate incoming audio to Vietnamese IMMEDIATELY as you hear it. 
+CRITICAL RULES:
+1. TRANSLATE WORD-BY-WORD or by SHORT PHRASES.
+2. DO NOT wait for complete sentences. 
+3. DO NOT wait for grammatical context. 
+4. Sacrifice perfect grammar if necessary to output the translation of the current words instantly. 
+5. Output only the direct Vietnamese translation. Do not converse. Speak clearly at a ${speed} speed.`,
         },
         callbacks: {
           onopen: () => {
@@ -102,6 +111,15 @@ export default function App() {
             });
           },
           onmessage: (message: LiveServerMessage) => {
+            // Debug transcription logging
+            if (message.serverContent) {
+                // Read the transcription of the user's speech
+                const inputTranscriptText = message.serverContent?.inputTranscription?.text;
+                if (inputTranscriptText) {
+                   setTranscriptions(prev => prev + inputTranscriptText);
+                }
+            }
+
             // Play incoming translated audio
             const base64Audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
             if (base64Audio) {
@@ -265,24 +283,44 @@ export default function App() {
         </div>
 
         {/* Output area */}
-        <div className="flex-1 relative flex flex-col bg-white/5 border border-white/10 rounded-3xl overflow-hidden backdrop-blur-xl shadow-2xl">
-          <div className="p-4 border-b border-white/10 bg-black/20 flex items-center justify-between">
-             <h2 className="text-sm font-medium uppercase tracking-widest text-white/50">Vietnamese Transcription</h2>
-             <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-white/20"></span>
-                <span className="w-2 h-2 rounded-full bg-white/20"></span>
-                <span className="w-2 h-2 rounded-full bg-white/20"></span>
+        <div className="flex-1 min-h-[400px] gap-6 grid grid-cols-1 md:grid-cols-2 relative z-10 w-full">
+           
+           {/* Source Transcription */}
+           <div className="flex relative flex-col bg-white/5 border border-white/10 rounded-3xl overflow-hidden backdrop-blur-xl shadow-2xl">
+             <div className="p-4 border-b border-white/10 bg-black/20 flex items-center justify-between">
+                <h2 className="text-sm font-medium uppercase tracking-widest text-white/50">Source Subtitles</h2>
              </div>
-          </div>
-          
-          <div className="flex-1 p-8 overflow-y-auto whitespace-pre-wrap font-serif text-3xl leading-relaxed text-slate-200">
-             {translations || (
-               <span className="text-white/20 italic font-sans text-xl">
-                 {isLive ? 'Listening...' : 'Awaiting connection...'}
-               </span>
-             )}
-             <div ref={textEndRef} />
-          </div>
+             
+             <div className="flex-1 p-6 overflow-y-auto whitespace-pre-wrap font-sans text-2xl text-slate-400 leading-snug">
+                {transcriptions || (
+                  <span className="text-white/20 italic font-sans text-lg">
+                    {isLive ? 'Waiting for speech...' : 'Awaiting connection...'}
+                  </span>
+                )}
+                <div ref={textEndRef} />
+             </div>
+           </div>
+
+           {/* Vietnamese Translation */}
+           <div className="flex relative flex-col bg-white/5 border border-white/10 border-t-orange-500/50 border-t-2 rounded-3xl overflow-hidden backdrop-blur-xl shadow-2xl">
+             <div className="p-4 border-b border-white/10 bg-black/20 flex items-center justify-between">
+                <h2 className="text-sm font-medium uppercase tracking-widest text-[#ff4e00]">Vietnamese Translation</h2>
+                <div className="flex items-center gap-2">
+                   <span className="w-2 h-2 rounded-full bg-white/20"></span>
+                   <span className="w-2 h-2 rounded-full bg-white/20"></span>
+                   <span className="w-2 h-2 rounded-full bg-white/20"></span>
+                </div>
+             </div>
+             
+             <div className="flex-1 p-6 overflow-y-auto whitespace-pre-wrap font-serif text-3xl leading-relaxed text-slate-100">
+                {translations || (
+                  <span className="text-white/20 italic font-sans text-xl">
+                    {isLive ? 'Listening & Translating...' : 'Awaiting connection...'}
+                  </span>
+                )}
+             </div>
+           </div>
+
         </div>
 
       </main>
